@@ -1,0 +1,10 @@
+9900015:new = N2 N2 2 0 0 1.0 0.0 0.0 0.0 0.1  0   1   0   1   0
+9900015:new = N2 N2 2 0 0 1.0 0.0 0.0 0.0 64439435.5355  0   1   0   1   0
+9900015:isResonance = false
+9900015:addChannel =  1 0.0941122393137 0 211 13
+9900015:addChannel =  1 0.0941122393137 0 -211 -13
+9900015:mayDecay = on
+SoftQCD:inelastic = on
+PhotonCollision:gmgm2mumu = on
+PromptPhoton:all = on
+WeakBosonExchange:all = on
