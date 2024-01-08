@@ -5,6 +5,10 @@ import ROOT
 import os
 import math
 import csv
+import re
+import numpy as np
+import scipy
+import six
 
 # Interface de Configuration de Particule
 class ParticleConfig(ABC):
@@ -31,6 +35,21 @@ class HNLConfig(ParticleConfig):
         
         self.add_hnl(mass, couplings)
         
+        if process_selection=='inclusive':
+            self.setup_pythia_inclusive()
+        
+        histograms = self.make_interpolators('branchingratios.dat')
+        pdg = ROOT.TDatabasePDG.Instance()
+        self.config_lines.append("Next:numberCount    =  0")
+    
+        datafile = 'hnl_production.yaml'
+        with open(datafile, 'rU') as f:
+            data = yaml.load(f, Loader=yaml.FullLoader)
+        all_channels  = data['channels']
+
+        # Inclusive
+        # =========
+
         if process_selection=='inclusive':
             self.setup_pythia_inclusive()
         
@@ -115,6 +134,79 @@ class HNLConfig(ParticleConfig):
                     print('\t'+channel)        
         return configuredDecays
 
+    def make_particles_stable(self, P8gen, above_lifetime):
+        # FIXME: find time unit and add it to the docstring
+        """
+        Make the particles with a lifetime above the specified one stable, to allow
+        them to decay in Geant4 instead.
+        """
+        p8 = P8gen.getPythiaInstance()
+        n=1
+        while n!=0:
+            n = p8.particleData.nextId(n)
+            p = p8.particleData.particleDataEntryPtr(n)
+            if p.tau0() > above_lifetime:
+                command = "{}:mayDecay = false".format(n)
+                p8.readString(command)
+                print("Pythia8 configuration: Made {} stable for Pythia, should decay in Geant4".format(p.name()))
+                
+    def make_interpolators(self, filepath, kind='linear'):
+        """
+        This function reads a file containing branching ratio histograms, and
+        returns a dictionary of interpolators of the branching ratios, indexed by
+        the decay string.
+        """
+        histogram_data = self.parse_histograms(filepath)
+        histograms = {}
+        for (hist_string, (masses, br)) in six.iteritems(histogram_data):
+            histograms[hist_string] = scipy.interpolate.interp1d(
+                masses, br, kind=kind, bounds_error=False, fill_value=0, assume_sorted=True)
+        return histograms
+
+    def parse_histograms(self,filepath):
+        """
+        This function parses a file containing histograms of branching ratios.
+
+        It places them in a dictionary indexed by the decay string (e.g. 'd_K0_e'),
+        as a pair ([masses...], [branching ratios...]), where the mass is expressed
+        in GeV.
+        """
+        with open(filepath, 'r') as f:
+            lines = f.readlines()
+        # Define regular expressions matching (sub-)headers and data lines
+        th1f_exp      = re.compile(r'^TH1F\|.+')
+        header_exp    = re.compile(r'^TH1F\|(.+?)\|B(?:R|F)/U2(.+?)\|.+? mass \(GeV\)\|?')
+        subheader_exp = re.compile(r'^\s*?(\d+?),\s*(\d+?\.\d+?),\s*(\d+\.\d+)\s*$')
+        data_exp      = re.compile(r'^\s*(\d+?)\s*,\s*(\d+\.\d+)\s*$')
+        # Locate beginning of each histogram
+        header_line_idx = [i for i in range(len(lines)) if th1f_exp.match(lines[i]) is not None]
+        # Iterate over histograms
+        histograms = {}
+        for offset in header_line_idx:
+            # Parse header
+            mh = header_exp.match(lines[offset])
+            if mh is None or len(mh.groups()) != 2:
+                raise ValueError("Malformed header encountered: {0}".format(lines[offset]))
+            decay_code = mh.group(1)
+            # Parse sub-header (min/max mass and number of points)
+            ms = subheader_exp.match(lines[offset+1])
+            if ms is None or len(ms.groups()) != 3:
+                raise ValueError("Malformed sub-header encountered: {0}".format(lines[offset+1]))
+            npoints  = int(ms.group(1))
+            min_mass = float(ms.group(2))
+            max_mass = float(ms.group(3))
+            masses = np.linspace(min_mass, max_mass, npoints, endpoint=False)
+            branching_ratios = np.zeros(npoints)
+            # Now read the data lines (skipping the two header lines)
+            for line in lines[offset+2:offset+npoints+1]:
+                md = data_exp.match(line)
+                if md is None or len(md.groups()) != 2:
+                    raise ValueError("Malformed data row encountered: {0}".format(line))
+                idx = int(md.group(1))
+                br  = float(md.group(2))
+                branching_ratios[idx] = br
+            histograms[decay_code] = (masses, branching_ratios)
+        return histograms
 class Particle:
     
     def __init__(self):
@@ -743,7 +835,7 @@ class PythiaSimulation:
 
     def read_base_config(self, filepath):
         with open(filepath, 'r') as file:
-            print(file.readlines()[0])
+            #print(file.readlines()[0])
             return file.readlines()
 
     def setup_simulation(self):
