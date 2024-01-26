@@ -1,13 +1,220 @@
 import ROOT
-from const_utils import Particle
-from const_utils import CKMmatrix
-from const_utils import constants
+from const_utils import Particle, CKMmatrix, constants
+from particle import ParticleConfig
 import math
 import os
 import shipunit as u
+import yaml
 # Load some useful constants
 c = constants()
 
+
+# Configuration pour HNL
+class HNLConfig(ParticleConfig):
+    def __init__(self, params):
+        self.params = params
+        self.config_lines =  []
+        self.pdg = ROOT.TDatabasePDG.Instance()
+        self.particle = Particle()
+        
+    def generate_config(self):
+        mass, couplings, process_selection = self.params['mass'], self.params['couplings'], self.params['process_selection']
+        # self.config_lines.append("9900015:new = N2 N2 2 0 0 {:.12} 0.0 0.0 0.0 {:.12}  0   1   0   1   0\n".format(mass, self.compute_ctau()))
+        may_decay = self.params['HNL_decay']
+        datafile = 'hnl_production.yaml'
+        with open(datafile, 'rU') as f:
+            data = yaml.load(f, Loader=yaml.FullLoader)
+        all_channels  = data['channels']
+        
+        self.add_hnl(mass, couplings, may_decay)
+        
+        
+        histograms = self.make_interpolators('branchingratios.dat')
+        pdg = ROOT.TDatabasePDG.Instance()
+        self.config_lines.append("Next:numberCount    =  0\n")
+    
+        datafile = 'hnl_production.yaml'
+        with open(datafile, 'rU') as f:
+            data = yaml.load(f, Loader=yaml.FullLoader)
+        all_channels  = data['channels']
+
+        # Inclusive
+        # =========
+
+        if process_selection=='inclusive':
+            self.setup_pythia_inclusive()
+        
+        if process_selection=='c':
+
+            selection = data['selections']['c']
+            for cmd in selection['parameters']:
+                self.config_lines.append(cmd+'\n')
+
+            # Add new charmed particles
+            # -------------------------
+
+            # Select all charmed particles (+ tau lepton)
+            c_particles = selection['particles']
+            tau_id = 15 # tau- Monte-Carlo ID
+            self.add_particles(c_particles + [tau_id], data)
+
+            # Add HNL production channels from charmed particles
+            # --------------------------------------------------
+
+            # Find charm and tau decays to HNLs
+            c_channels = [ch for ch in all_channels if ch['id'] in c_particles]
+            tau_channels = [ch for ch in all_channels if ch['id'] == tau_id]
+            # Standard model process: tau+ production from D_s+ decay
+            ds_id = 431 # D_s+ Monte-Carlo ID
+            ds_tau_br = 0.0548 # SM branching ratio Br(D_s+ -> tau+ nu_tau) (source: PDG 2018)
+
+            # Compute the branching ratio scaling factor, taking into account
+            # secondary production from tau
+            # Decay chains are encoded as follows:
+            #     [(top level id A, [br A -> B, br B -> C, ...]), ...]
+
+            # Most charm particles directly decay to HNLs
+            primary_decays = [(ch['id'], [self.get_br(histograms, ch, mass, couplings)])
+                            for ch in c_channels]
+            # The D_s+ can indirectly produce a HNL by first producing a tau+
+            secondary_decays = [(ds_id, [ds_tau_br, self.get_br(histograms, ch, mass, couplings)])
+                                for ch in tau_channels]
+            all_decays = primary_decays + secondary_decays
+
+            # Compute maximum total branching ratio (to rescale all BRs)
+            max_total_br = self.compute_max_total_br(all_decays)
+            self.exit_if_zero_br(max_total_br, process_selection, mass)
+            self.print_scale_factor(1/max_total_br)
+
+            # Add charm decays
+            for ch in c_channels:
+                self.add_channel(ch, histograms, mass, couplings, 1/max_total_br)
+            # Add tau production from D_s+
+            # We can freely rescale Br(Ds -> tau) and Br(tau -> N X...) as long as
+            # Br(Ds -> tau -> N X...) remains the same.
+            # Here, we set Br(tau -> N) to unity to make event generation more efficient.
+            # The implicit assumption here is that we will disregard the tau during the analysis.
+            total_tau_br = sum(branching_ratios[1] for (_, branching_ratios) in secondary_decays)
+            assert(ds_tau_br*total_tau_br <= max_total_br + 1e-12)
+            self.config_lines.append("431:addChannel      1  {:.12}    0      -15       16\n"\
+                                .format(ds_tau_br*total_tau_br/max_total_br))
+            # Add secondary HNL production from tau
+            for ch in tau_channels:
+                # Rescale branching ratios only if some are non-zero. Otherwise leave them at zero.
+                self.add_tau_channel(ch, histograms, mass, couplings, 1/(total_tau_br or 1))
+
+            # Add dummy channels in place of SM processes
+            self.fill_missing_channels(max_total_br, all_decays)
+
+            # # List channels to confirm that Pythia has been properly set up
+            # P8gen.List(9900015)
+        
+        if process_selection in ['b', 'bc']:
+            selection = data['selections'][process_selection]
+            for cmd in selection['parameters']:
+                self.config_lines.append(cmd+'\n')
+            # Add particles
+            particles = selection['particles']
+            self.add_particles(particles, data)
+
+            # Find all decay channels
+            channels = [ch for ch in all_channels if ch['id'] in particles]
+            decays = [(ch['id'], [self.get_br(histograms, ch, mass, couplings)]) for ch in channels]
+
+            # Compute scaling factor
+            max_total_br = self.compute_max_total_br(decays)
+            self.exit_if_zero_br(max_total_br, process_selection, mass)
+            self.print_scale_factor(1/max_total_br)
+
+            # Add beauty decays
+            for ch in channels:
+                self.add_channel(ch, histograms, mass, couplings, 1/max_total_br)
+
+            # Add dummy channels in place of SM processes
+            self.fill_missing_channels(max_total_br, decays)
+
+        if process_selection == 'Z':
+            self.config_lines.append("WeakBosonAndParton:qqbar2gmZg = on\n")
+            self.config_lines.append("WeakBosonAndParton:qg2gmZq = on\n")
+        # ... Autres configurations
+        
+        return self.config_lines
+
+    
+    
+    def add_hnl(self, mass, couplings, may_decay):
+        hnl_instance = HNL(mass, couplings, debug=True)
+        ctau = hnl_instance.computeNLifetime(system="FairShip") * u.c_light * u.cm
+    
+        self.config_lines.append("9900015:new = N2 N2 2 0 0 {:.12} 0.0 0.0 0.0 {:.12}  0   1   0   1   0\n".format(mass, ctau/u.mm))
+        self.config_lines.append("9900015:isResonance = false\n")
+        # Configuring decay modes...
+        if may_decay:
+            self.addHNLdecayChannels(hnl_instance, conffile=os.path.expandvars('DecaySelection.conf'), verbose=False)
+        # Finish HNL setup...
+        self.config_lines.append("9900015:mayDecay = Off\n")
+        
+    def addHNLdecayChannels(self, hnl, conffile=os.path.expandvars('DecaySelection.conf'), verbose=True):
+        """
+        Configures the HNL decay table in Pythia8
+        Inputs:
+        - P8Gen: an instance of ROOT.HNLPythia8Generator()
+        - hnl: an instance of hnl.HNL()
+        - conffile: a file listing the channels one wishes to activate
+        """
+        # First fetch the list of kinematically allowed decays
+        allowed = hnl.allowedChannels()
+        # Then fetch the list of desired channels to activate
+        wanted = self.load(conffile=conffile, verbose=verbose)
+        # Add decay channels
+        for dec in allowed:
+            if dec not in wanted:
+                print('addHNLdecayChannels ERROR: channel not configured!\t', dec)
+                quit()
+            if allowed[dec] == 'yes' and wanted[dec] == 'yes':
+                particles = [p for p in dec.replace('->',' ').split()]
+                children = particles[1:]
+                childrenCodes = [self.PDGcode(p) for p in children]
+                BR = hnl.findBranchingRatio(dec)
+                # Take care of Majorana modes
+                BR = BR/2.
+                codes = ' '.join([str(code) for code in childrenCodes])
+                self.config_lines.append('9900015:addChannel =  1 {:.12} 0 {}\n'.format(BR, codes))
+                # Charge conjugate modes
+                codes = ' '.join([(str(-1*code) if self.particle.pdg.GetParticle(-code)!=None else str(code)) for code in childrenCodes])
+                self.config_lines.append('9900015:addChannel =  1 {:.12} 0 {}\n'.format(BR, codes))
+                # print "debug readdecay table",particles,children,BR
+    
+    def add_channel(self, ch, histograms, mass, couplings, scale_factor):
+        "Add to PYTHIA a leptonic or semileptonic decay channel to HNL."
+        if 'idlepton' in ch:
+            br = self.get_br(histograms, ch, mass, couplings)
+            if br <= 0: # Ignore kinematically closed channels
+                return
+            if 'idhadron' in ch: # Semileptonic decay
+                self.config_lines.append('{}:addChannel      1  {:.17}   22      {}       9900015   {}\n'.format(ch['id'], br*scale_factor, ch['idlepton'], ch['idhadron']))
+            else: # Leptonic decay
+                self.config_lines.append('{}:addChannel      1  {:.17}    0       9900015      {}\n'.format(ch['id'], br*scale_factor, ch['idlepton']))
+        else: # Wrong decay
+            raise ValueError("Missing key 'idlepton' in channel {0}".format(ch))
+
+            
+    
+    
+    def add_tau_channel(self, ch, histograms, mass, couplings, scale_factor):
+        "Add to PYTHIA a tau decay channel to HNL."
+        if 'idhadron' in ch:
+            br = self.get_br(histograms, ch, mass, couplings)
+            if br <= 0: # Ignore kinematically closed channels
+                return
+            if 'idlepton' in ch: # 3-body leptonic decay
+                self.config_lines.append('{}:addChannel      1  {:.16}    1531       9900015      {} {}\n'.format(ch['id'], br*scale_factor, ch['idlepton'], ch['idhadron']))
+            else: # 2-body semileptonic decay
+                self.config_lines.append('{}:addChannel      1  {:.16}    1521       9900015      {}\n'.format(ch['id'], br*scale_factor, ch['idhadron']))
+        else:
+            raise ValueError("Missing key 'idhadron' in channel {0}".format(ch))
+   
+   
 class HNLbranchings(Particle):
     """
     Lifetime and total and partial decay widths of an HNL
