@@ -116,7 +116,6 @@ class ParticleConfig(ABC):
             assert(remainder > -epsilon)
             assert(remainder < 1 + epsilon)
             if remainder > epsilon:
-                print(particle)
                 self.add_dummy_channel(particle, remainder)
     
     def print_scale_factor(self,scaling_factor):
@@ -218,7 +217,7 @@ class ParticleConfig(ABC):
         th1f_exp      = re.compile(r'^TH1F\|.+')
         header_exp    = re.compile(r'^TH1F\|(.+?)\|B(?:R|F)/U2(.+?)\|.+? mass \(GeV\)\|?')
         subheader_exp = re.compile(r'^\s*?(\d+?),\s*(\d+?\.\d+?),\s*(\d+\.\d+)\s*$')
-        data_exp      = re.compile(r'^\s*(\d+?)\s*,\s*(\d+\.\d+)\s*$')
+        data_exp      = re.compile(r'^\s*(\d+)\s*,\s*(\d+\.\d+)\s*$')
         # Locate beginning of each histogram
         header_line_idx = [i for i in range(len(lines)) if th1f_exp.match(lines[i]) is not None]
         # Iterate over histograms
@@ -235,7 +234,7 @@ class ParticleConfig(ABC):
                 raise ValueError("Malformed sub-header encountered: {0}".format(lines[offset+1]))
             npoints  = int(ms.group(1))
             min_mass = float(ms.group(2))
-            max_mass = float(ms.group(3))
+            max_mass = float(ms.group(1))
             masses = np.linspace(min_mass, max_mass, npoints, endpoint=False)
             branching_ratios = np.zeros(npoints)
             # Now read the data lines (skipping the two header lines)

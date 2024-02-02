@@ -32,11 +32,6 @@ class HNLConfig(ParticleConfig):
         histograms = self.make_interpolators('branchingratios.dat')
         pdg = ROOT.TDatabasePDG.Instance()
         self.config_lines.append("Next:numberCount    =  0\n")
-    
-        datafile = 'hnl_production.yaml'
-        with open(datafile, 'rU') as f:
-            data = yaml.load(f, Loader=yaml.FullLoader)
-        all_channels  = data['channels']
 
         # Inclusive
         # =========
@@ -47,6 +42,7 @@ class HNLConfig(ParticleConfig):
         if process_selection=='c':
 
             selection = data['selections']['c']
+            print(selection)
             for cmd in selection['parameters']:
                 self.config_lines.append(cmd+'\n')
 
@@ -83,6 +79,7 @@ class HNLConfig(ParticleConfig):
 
             # Compute maximum total branching ratio (to rescale all BRs)
             max_total_br = self.compute_max_total_br(all_decays)
+            
             self.exit_if_zero_br(max_total_br, process_selection, mass)
             self.print_scale_factor(1/max_total_br)
 
@@ -134,8 +131,38 @@ class HNLConfig(ParticleConfig):
             self.fill_missing_channels(max_total_br, decays)
 
         if process_selection == 'Z':
-            self.config_lines.append("WeakBosonAndParton:qqbar2gmZg = on\n")
-            self.config_lines.append("WeakBosonAndParton:qg2gmZq = on\n")
+            selection = data['selections']['Z']
+            print(selection)
+            
+            tau_id = 15 # tau- Monte-Carlo ID
+            self.add_particles([tau_id], data)
+            
+            for cmd in selection['parameters']:
+                self.config_lines.append(cmd+'\n')
+                
+            Z_particles = selection['particles']
+
+            # self.add_particles(Z_particles, data)
+
+            # Add HNL production channels from charmed particles
+            # --------------------------------------------------
+
+            # Find charm and tau decays to HNLs
+            Z_channels = [ch for ch in all_channels if ch['id'] in Z_particles]
+            
+            all_decays = [(ch['id'], [self.get_br(histograms, ch, mass, couplings)])
+                            for ch in Z_channels]
+            
+            max_total_br = self.compute_max_total_br(all_decays)
+            
+            self.exit_if_zero_br(max_total_br, process_selection, mass)
+            self.print_scale_factor(1/max_total_br)
+
+            # Add charm decays
+            for ch in Z_channels:
+                self.add_channel(ch, histograms, mass, couplings, 1/max_total_br)
+                
+            self.fill_missing_channels(max_total_br, all_decays)
         # ... Autres configurations
         
         return self.config_lines

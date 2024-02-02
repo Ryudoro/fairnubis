@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 from HNL import HNLConfig
+from DarkPhoton import DarkPhotonConfig
 import argparse
     
 class ParticleConfigFactory:
-    particle_config_map = {"HNL" : HNLConfig}
+    particle_config_map = {"HNL" : HNLConfig, "DarkPhoton" : DarkPhotonConfig}
 
     @classmethod
     def register_particle_config(cls, particle_type, config_class):
@@ -51,18 +52,23 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="Pythia Simulation for HNL Particles")
     parser.add_argument("--mass", type=float, default=1.0, help="Mass of the HNL particle")
     parser.add_argument("--coupling", nargs=3, type=float, default=[0.447e-9, 7.15e-9, 1.88e-9], help="Three couplings for the HNL particle")
-    parser.add_argument("--process", default="c", help="Process selection for the simulation")
+    parser.add_argument("--process", default="Z", help="Process selection for the simulation")
     parser.add_argument("--HNL_decay", default=False, help="True or False, are we interested in particule decays")
+    parser.add_argument("--epsilon", default = 0.00000008, help="epsilon mixing value for DarkPhoton")
+    parser.add_argument("--MesonMother",  help="Choose DP production meson source", required=False,  default=True)
     
+    0.00000008
     args = parser.parse_args()
     
     hnl_params = {
         "mass": args.mass,
         "couplings": args.coupling,
         "process_selection": args.process,
-        "HNL_decay": args.HNL_decay
+        "HNL_decay": args.HNL_decay,
+        "epsilon" : args.epsilon,
+        "mothermode" : args.MesonMother
     }
 
-    hnl_config = ParticleConfigFactory.get_particle_config("HNL", hnl_params)
+    hnl_config = ParticleConfigFactory.get_particle_config("DarkPhoton", hnl_params)
     simulation = PythiaSimulation(hnl_config)
     simulation.setup_simulation()
