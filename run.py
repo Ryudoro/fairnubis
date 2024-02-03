@@ -104,46 +104,47 @@ for event in range(nEvents):
 mother_counts = Counter(hnl_mother_ids)
 mothers = list(mother_counts.keys())
 counts = list(mother_counts.values())
-
+print(mother_counts,  mothers)
 # Utiliser les indices des particules mères comme positions des barres sur l'axe des x
 positions = range(len(mothers))
 
-# Créer un bar plot
-plt.figure(figsize=(12, 6))
-plt.bar(positions, counts, align='center', alpha=0.7)
-plt.xlabel('ID des particules mères')
-plt.ylabel('Nombre de HNLs')
-plt.title('Bar plot des particules mères des HNLs')
-plt.xticks(positions, mothers, rotation=45)
-plt.show()
-
-
-# hnl_energies = []
-
-# nAbort = 0
-# maxErr = pythia.mode("Main:timesAllowErrors") + 10
-# for event in range(nEvents):
-#     if not pythia.next():
-#         nAbort += 1
-#         if nAbort >= maxErr:
-#             print(f"Event generation ended prematurely at Event {event}, due to too many errors ({maxErr})")
-#             break
-#         continue
-
-#     # Parcourir toutes les particules de l'événement
-#     for i in range(pythia.event.size()):
-#         particle = pythia.event[i]
-#         if particle.id() == 9900015:  # Filtrer pour trouver vos HNLs
-#             hnl_energies.append(particle.e())  # Ajouter l'énergie de la particule HNL à la liste
-
-# # Affichage de l'histogramme des énergies HNL
-# plt.figure()
-# plt.hist(hnl_energies, bins=50, alpha=0.7, label='Énergie des HNL')
-# plt.xlabel('Énergie [GeV]')
-# plt.ylabel('Nombre de particules')
-# plt.title('Histogramme de l\'énergie des particules HNL')
-# plt.legend()
+# # Créer un bar plot
+# plt.figure(figsize=(12, 6))
+# plt.bar(positions, counts, align='center', alpha=0.7)
+# plt.xlabel('ID des particules mères')
+# plt.ylabel('Nombre de HNLs')
+# plt.title('Bar plot des particules mères des HNLs')
+# plt.xticks(positions, mothers, rotation=45)
 # plt.show()
+
+
+hnl_energies = []
+
+nAbort = 0
+maxErr = pythia.mode("Main:timesAllowErrors") + 10
+for event in range(nEvents):
+    if not pythia.next():
+        nAbort += 1
+        if nAbort >= maxErr:
+            print(f"Event generation ended prematurely at Event {event}, due to too many errors ({maxErr})")
+            break
+        continue
+
+    # Parcourir toutes les particules de l'événement
+    for i in range(pythia.event.size()):
+        particle = pythia.event[i]
+        if particle.id() == 9900015:  # Filtrer pour trouver vos HNLs
+            hnl_energies.append(particle.e())  # Ajouter l'énergie de la particule HNL à la liste
+
+
+# Affichage de l'histogramme des énergies HNL
+plt.figure()
+plt.hist(hnl_energies, bins=50, alpha=0.7, label='Énergie des HNL')
+plt.xlabel('Énergie [GeV]')
+plt.ylabel('Nombre de particules')
+plt.title('Histogramme de l\'énergie des particules HNL')
+plt.legend()
+plt.show()
 
 
 
