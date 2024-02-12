@@ -34,7 +34,7 @@ class DarkPhotonConfig(ParticleConfig):
         epsilon, motherMode = self.params['epsilon'], self.params['mothermode']
         
         
-        # if process_selection=="meson":
+        if process_selection=="meson":
         # # let strange particle decay in Geant4
         #     # p8 = P8gen.getPythiaInstance()
         #     n=1
@@ -47,7 +47,7 @@ class DarkPhotonConfig(ParticleConfig):
         #         print("Pythia8 configuration: Made %s stable for Pythia, should decay in Geant4"%(p.name()))
             
         #     # Configuring production
-        #     self.config_lines.append("SoftQCD:nonDiffractive = on")
+            self.config_lines.append("SoftQCD:nonDiffractive = on\n")
 
         if process_selection=="qcd":
             ##Set fy to Ktrue
@@ -125,7 +125,7 @@ class DarkPhotonConfig(ParticleConfig):
         # Configuring decay modes...
         self.addDarkPhotondecayChannels(mass, DP_instance, conffile=os.path.expandvars('darkphotonDecaySelection.conf'), verbose=True)
         # Finish DP setup...
-        self.config_lines.append("{}:mayDecay = on".format(self.DPid))
+        self.config_lines.append("{}:mayDecay = on\n".format(self.DPid))
         #P8gen.SetDPId(P8gen.GetDPId())
         # also add to PDG
         gamma = u.hbarc / float(ctau) #197.3269631e-16 / float(ctau) # hbar*c = 197 MeV*fm = 197e-16 GeV*cm

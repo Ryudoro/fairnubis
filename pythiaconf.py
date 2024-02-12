@@ -50,9 +50,10 @@ if __name__ == '__main__':
     # Utilisation
     
     parser = argparse.ArgumentParser(description="Pythia Simulation for HNL Particles")
-    parser.add_argument("--mass", type=float, default=1.0, help="Mass of the HNL particle")
+    parser.add_argument("--type", type=str, default="HNL", help="particle")
+    parser.add_argument("--mass", type=float, default=1., help="Mass of the HNL particle")
     parser.add_argument("--coupling", nargs=3, type=float, default=[0.447e-9, 7.15e-9, 1.88e-9], help="Three couplings for the HNL particle")
-    parser.add_argument("--process", default="Z", help="Process selection for the simulation")
+    parser.add_argument("--process", default="c", help="Process selection for the simulation")
     parser.add_argument("--HNL_decay", default=False, help="True or False, are we interested in particule decays")
     parser.add_argument("--epsilon", default = 0.00000008, help="epsilon mixing value for DarkPhoton")
     parser.add_argument("--MesonMother",  help="Choose DP production meson source", required=False,  default=True)
@@ -61,6 +62,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
     
     hnl_params = {
+        "type" : args.type,
         "mass": args.mass,
         "couplings": args.coupling,
         "process_selection": args.process,
@@ -69,6 +71,7 @@ if __name__ == '__main__':
         "mothermode" : args.MesonMother
     }
 
-    hnl_config = ParticleConfigFactory.get_particle_config("DarkPhoton", hnl_params)
+    hnl_params['mothermode'] = "eta11"
+    hnl_config = ParticleConfigFactory.get_particle_config(hnl_params["type"], hnl_params)
     simulation = PythiaSimulation(hnl_config)
     simulation.setup_simulation()

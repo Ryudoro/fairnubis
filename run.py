@@ -1,5 +1,6 @@
 import sys, os
 import matplotlib.pyplot as plt
+import math
 
 print(os.getcwd())
 cfg = open("pythia8310/Makefile.inc")
@@ -75,9 +76,16 @@ pythia.stat()
 from collections import Counter
 from collections import Counter
 
+with open('pythia_config.cmnd', 'r') as f:
+    if '9900015' in f.readlines():
+        hnl = 23
+    else : 
+        hnl = 9900015
 # Préparation pour le bar plot des particules mères des HNLs
 hnl_mother_ids = []
-
+hnl_etas = []
+hnl_phis = []
+hnl_distances = []
 nAbort = 0
 maxErr = pythia.mode("Main:timesAllowErrors") + 10
 for event in range(nEvents):
@@ -91,7 +99,7 @@ for event in range(nEvents):
     # Parcourir toutes les particules de l'événement
     for i in range(pythia.event.size()):
         particle = pythia.event[i]
-        if particle.id() == 9900015:  # Filtrer pour trouver vos HNLs
+        if particle.id() == hnl:  # Filtrer pour trouver vos HNLs
             # Collecter les ID des particules mères
             if particle.mother1() != 0:
                 mother_id = pythia.event[particle.mother1()].id()
@@ -133,9 +141,16 @@ for event in range(nEvents):
     # Parcourir toutes les particules de l'événement
     for i in range(pythia.event.size()):
         particle = pythia.event[i]
-        if particle.id() == 9900015:  # Filtrer pour trouver vos HNLs
+        if particle.id() == hnl:  # Filtrer pour trouver vos HNLs
+            print(particle.e())
             hnl_energies.append(particle.e())  # Ajouter l'énergie de la particule HNL à la liste
+            hnl_etas.append(particle.eta())
+            hnl_phis.append(particle.phi())
 
+            # Calculer la distance depuis le point d'interaction en direction R
+            px, py = particle.px(), particle.py()
+            distance_R = math.sqrt(px**2 + py**2)  # Distance dans le plan transverse
+            hnl_distances.append(distance_R)
 
 # Affichage de l'histogramme des énergies HNL
 plt.figure()
@@ -143,6 +158,31 @@ plt.hist(hnl_energies, bins=50, alpha=0.7, label='Énergie des HNL')
 plt.xlabel('Énergie [GeV]')
 plt.ylabel('Nombre de particules')
 plt.title('Histogramme de l\'énergie des particules HNL')
+plt.legend()
+plt.show()
+
+plt.figure()
+plt.hist(hnl_etas, bins=50, alpha=0.7, label='Eta des HNL')
+plt.xlabel('Eta')
+plt.ylabel('Nombre de particules')
+plt.title('Histogramme de l\'eta des particules HNL')
+plt.legend()
+plt.show()
+
+
+plt.figure()
+plt.hist(hnl_phis, bins=50, alpha=0.7, label='Phi des HNL')
+plt.xlabel('Phi')
+plt.ylabel('Nombre de particules')
+plt.title('Histogramme du phi des particules HNL')
+plt.legend()
+plt.show()
+
+plt.figure()
+plt.hist(hnl_distances, bins=50, alpha=0.7, label='Distance R depuis IP')
+plt.xlabel('Distance R [m]')
+plt.ylabel('Nombre de particules')
+plt.title('Histogramme de la distance R depuis le point d\'interaction pour les HNL')
 plt.legend()
 plt.show()
 

@@ -1,0 +1,18 @@
+version: '3.8'
+services:
+  computation:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - .:/usr/src/app
+    entrypoint: ["/bin/bash"]
+
+  streamlit:
+    build:
+      context: .
+      dockerfile: Dockerfile-streamlit
+    ports:
+      - "8501:8501"
+    volumes:
+      - .:/app

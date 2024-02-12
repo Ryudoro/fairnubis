@@ -82,6 +82,11 @@
             "parameters": ["HardQCD::hardbbbar  = on"],
             "particles": [541],
         },
+        #Adding Z production
+        "Z" : {
+            "parameters": ["WeakBosonAndParton:qqbar2gmZg = on", "WeakBosonAndParton:qg2gmZq = on"],
+            "particles": [23],
+        }
     },
 
     "channels":
@@ -183,6 +188,14 @@
         {"id":541,"decay":"bc_B0_mu",   "coupling":1,"idlepton":-13,"idhadron":511},
         {"id":541,"decay":"bc_B*0_mu",  "coupling":1,"idlepton":-13,"idhadron":513},
         {"id":541,"decay":"bc_B_s0_mu", "coupling":1,"idlepton":-13,"idhadron":531},
-        {"id":541,"decay":"bc_B*_s0_mu","coupling":1,"idlepton":-13,"idhadron":533}
+        {"id":541,"decay":"bc_B*_s0_mu","coupling":1,"idlepton":-13,"idhadron":533},
+        
+        #Z part
+    #     {"id": 23, "decay": "Z_HNL_nu_e",    "coupling": 0, "idlepton": -12},
+    # {"id": 23, "decay": "Z_HNL_nu_mu",   "coupling": 1, "idlepton": -14},
+    # {"id": 23, "decay": "Z_HNL_nu_tau",  "coupling": 2, "idlepton": -16},
+    {"id": 23, "decay": "Z_HNL_lepton_e",    "coupling": 0, "idlepton": -11},
+    {"id": 23, "decay": "Z_HNL_lepton_mu",   "coupling": 1, "idlepton": -13},
+    {"id": 23, "decay": "Z_HNL_lepton_tau",  "coupling": 2, "idlepton": -15}
     ]
 }
