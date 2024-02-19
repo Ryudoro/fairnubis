@@ -25,8 +25,8 @@ PYTHIA=$(PREFIX_LIB)/libpythia8$(LIB_SUFFIX)
 all: 
 	make run
 
-run: $(PYTHIA) run.cc
-	${CXX} $@.cc -o $@ $(CXX_COMMON) 
+run: $(PYTHIA) run2.cpp
+	${CXX} $@2.cpp -o $@ $(CXX_COMMON) 
 
 clean: 
 	rm run
