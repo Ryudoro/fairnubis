@@ -1,0 +1,32 @@
+! Fichier exemple.cmnd pour la simulation de production de HNL via B et C mesons dans PYTHIA
+Main:numberOfEvents = 10000      ! Nombre d'événements à simuler
+Main:timesAllowErrors = 3        ! Nombre de fois où PYTHIA tentera de générer un événement en cas d'erreur
+
+! Paramètres initiaux pour les faisceaux
+Beams:idA = 2212  ! proton
+Beams:idB = 2212  ! proton
+Beams:eCM = 13000. ! énergie du centre de masse en GeV
+
+! Activation de la production de mésons B et C
+HardQCD:hardccbar = on
+HardQCD:hardbbbar = on
+
+! Définir les propriétés des HNLs (exemple hypothétique)
+9900015:new  HNL  HNLbar  2  0  0  1.0  0.0  0.0  0.0  1.0  3  0  0  0  0
+9900015:isResonance = false
+9900015:isVisible = false
+9900015:mayDecay = true
+! 9900015:width = 1e-10       ! Largeur de désintégration hypothétique en GeV
+9900015:tau0 = 0.0001       ! Durée de vie propre hypothétique en mm/c
+
+! Paramètres pour les désintégrations des HNLs
+9900015:oneChannel = 1 0.5 101 -13 14  ! Exemple de canal de désintégration: HNL -> mu- nu_mu (50% de probabilité)
+9900015:addChannel = 1 0.5 101  11 -12  ! Autre exemple: HNL -> e- nu_e (50% de probabilité)
+
+! D'autres réglages peuvent être nécessaires en fonction de vos besoins spécifiques
+
+! Sauvegarde des événements
+! Vous pouvez choisir le format de sortie, par exemple en format HepMC, ROOT, etc.
+! Spécifier le fichier de sortie LHE
+!LHEF:Output = on
+!LHEF:Filename = output_events.lhe

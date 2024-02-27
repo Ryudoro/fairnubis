@@ -1,0 +1,38 @@
+! main24.cmnd
+! This file contains commands to be read in for a Pythia8 run.
+! Lines not beginning with a letter or digit are comments.
+
+! 1) Settings used in the main program.
+Main:numberOfEvents = 10000        ! number of events to generate
+Main:timesAllowErrors = 3          ! how many aborts before run stops
+
+! 2) Settings related to output in init(), next() and stat().
+Init:showChangedSettings = on      ! list changed settings
+Init:showChangedParticleData = on ! list changed particle data
+Next:numberCount = 500             ! print message every n events
+Next:numberShowInfo = 2            ! print event information n times
+Next:numberShowProcess = 2         ! print process record n times
+Next:numberShowEvent = 2           ! print event record n times
+
+! 3) Beam parameter settings. Values below agree with default ones.
+Beams:idA = 2212                   ! first beam, p = 2212, pbar = -2212
+Beams:idB = 2212                   ! second beam, p = 2212, pbar = -2212
+Beams:eCM = 13000.                 ! CM energy of collision
+
+9900015:new = N2 N2 2 0 0 70.0 0.0 0.0 0.0 64439435.5355  0   1   0   1   0
+9900015:isResonance = false
+9900015:mayDecay = Off
+Next:numberCount    =  0
+
+WeakBosonAndParton:qqbar2gmZg = on
+WeakBosonAndParton:qg2gmZq = on
+
+!HardQCD::hardccbar  = on
+
+!23:offIfAny = 15   -15
+!23:offIfAny = 5 -5
+
+23:addChannel      1  0.017121457046082139   0      9900015   15
+!421:addChannel      1  0.0097121457046082139   22      -11       9900015   -323
+
+
