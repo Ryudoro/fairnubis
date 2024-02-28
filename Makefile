@@ -7,10 +7,13 @@ PREFIX_INCLUDE=pythia8310/include
 PREFIX_LIB=pythia8310/lib
 PREFIX_SHARE=pythia8310/share/Pythia8
 
+# HepMC3 install directory prefix.
+HEPMC3_INSTALL_DIR=hepmc3-install
+
 # Compilation flags 
 CXX=g++
-CXX_COMMON=-O2 -std=c++11 -pedantic -W -Wall -Wshadow -fPIC -I$(PREFIX_INCLUDE) $(GZIP_LIB)
-CXX_COMMON+= -L$(PREFIX_LIB) -Wl,-rpath,$(PREFIX_LIB) -lpythia8 -ldl
+CXX_COMMON=-O2 -std=c++11 -pedantic -W -Wall -Wshadow -fPIC -I$(PREFIX_INCLUDE) -I$(HEPMC3_INSTALL_DIR)/include $(GZIP_LIB)
+CXX_COMMON+= -L$(PREFIX_LIB) -L$(HEPMC3_INSTALL_DIR)/lib -Wl,-rpath,$(PREFIX_LIB):$(HEPMC3_INSTALL_DIR)/lib -lpythia8 -ldl -lHepMC3
 CXX_SHARED=-shared
 CXX_SONAME=-Wl,-soname,
 LIB_SUFFIX=.so
@@ -25,8 +28,8 @@ PYTHIA=$(PREFIX_LIB)/libpythia8$(LIB_SUFFIX)
 all: 
 	make run
 
-run: $(PYTHIA) run2.cpp
-	${CXX} $@2.cpp -o $@ $(CXX_COMMON) 
+run: $(PYTHIA) run_hep.cpp
+	${CXX} $@_hep.cpp -o $@ $(CXX_COMMON) 
 
 clean: 
 	rm run

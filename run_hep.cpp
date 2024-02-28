@@ -16,10 +16,10 @@ int main(int argc, char *argv[]) {
     // Setup argument parsing: including defaults
     std::string inFile = "pythia_config.cmnd";
     std::string outFileNameLHE = "";
-    std::string outFileNameHepMC = "";
+    std::string outFileNameHepMC = "truc.hepmc";
     std::string suffix = "";
     std::string mode = "hnl";
-    std::string totalEvents = "10000";
+    std::string totalEvents = "100";
 
     // Extended argument parsing to include HepMC output file
     for (int i = 0; i < argc; i++) {
@@ -46,6 +46,7 @@ int main(int argc, char *argv[]) {
             }
             totalEvents = std::to_string(std::stoi(totalEvents));
             i++;
+            continue;
         } else if (std::string(argv[i]) == "--help" || std::string(argv[i]) == "-h") {
             std::cout << "Run the pythia event generation. Usage:" << std::endl;
             std::cout << std::endl;
@@ -62,44 +63,108 @@ int main(int argc, char *argv[]) {
         }
     }
 
+    std::cout << "Infile: " << inFile <<std::endl;
+    std::cout << "Outfile: " << outFileNameLHE <<std::endl;
+    std::cout << "Suffix: " << suffix << std::endl;
+    std::cout << "Mode: " << mode << std::endl;
+    std::cout << "Total Events: " << totalEvents << std::endl;
+
     // Generator setup
     Pythia pythia;
+    Event& event = pythia.event;
     // Read in commands from external file
     pythia.readFile(inFile);
 
-    // Prepare the output file names
-    if (outFileNameLHE.empty())
-        outFileNameLHE = inFile.replace(inFile.find(".cmnd"), std::string(".cmnd").length(), "_lhe.lhe");
-    if (outFileNameHepMC.empty())
-        outFileNameHepMC = inFile.replace(inFile.find(".cmnd"), std::string(".cmnd").length(), "_hepmc.hepmc");
+    LHEF3FromPythia8 lhef3(&pythia.event, &pythia.info);
 
-    // Append suffix to file names if provided
-    if (!suffix.empty()) {
-        outFileNameLHE.insert(outFileNameLHE.find(".lhe"), "_" + suffix);
-        outFileNameHepMC.insert(outFileNameHepMC.find(".hepmc"), "_" + suffix);
+    // // Prepare the output file names
+    // if (outFileNameLHE.empty())
+    //     outFileNameLHE = inFile.replace(inFile.find(".cmnd"), std::string(".cmnd").length(), ".lhe");
+    // if (outFileNameHepMC.empty())
+    //     outFileNameHepMC = inFile.replace(inFile.find(".cmnd"), std::string(".cmnd").length(), "_hepmc.hepmc");
+
+    // // Append suffix to file names if provided
+    // if (!suffix.empty()) {
+    //     outFileNameLHE.insert(outFileNameLHE.find(".lhe"), "_" + suffix);
+    //     outFileNameHepMC.insert(outFileNameHepMC.find(".hepmc"), "_" + suffix);
+    // }
+    
+    // Open a file on which LHEF events should be stored, and write header
+    if (outFileNameLHE=="")
+        outFileNameLHE = inFile.replace(inFile.find(".cmnd"),std::string(".cmnd").length(),".lhe");
+    
+    // Checking the file extension
+    if (outFileNameLHE.find(".") == std::string::npos)
+        outFileNameLHE = outFileNameLHE + ".lhe";  // Add .lhe if no extension exists.  
+
+    std::string fileExtension = "." + outFileNameLHE.substr(outFileNameLHE.find_last_of(".")+1); 
+    if (fileExtension != ".lhe"){
+        std::cout << "Current file extension is: " << fileExtension <<std::endl;
+        outFileNameLHE = outFileNameLHE.replace(outFileNameLHE.find(fileExtension),fileExtension.length(),".lhe");
     }
+    
+    // Add suffix
+    suffix = suffix + "_Events" + totalEvents;
+    outFileNameLHE = outFileNameLHE.replace(outFileNameLHE.find(".lhe"),std::string(".lhe").length(),suffix+".lhe");
+
+
+// // Open a file on which LHEF events should be stored, and write header
+//     if (outFileNameHepMC=="")
+//         outFileNameHepMC = inFile.replace(inFile.find(".cmnd"),std::string(".cmnd").length(),".hepmc");
+    
+//     // Checking the file extension
+//     if (outFileNameHepMC.find(".") == std::string::npos)
+//         outFileNameHepMC = outFileNameHepMC + ".hepmc";  // Add .lhe if no extension exists.  
+
+//     std::string fileExtension2 = "." + outFileNameHepMC.substr(outFileNameHepMC.find_last_of(".")+1); 
+//     if (fileExtension2 != ".hepmc"){
+//         std::cout << "Current file extension is: " << fileExtension2 <<std::endl;
+//         outFileNameHepMC = outFileNameHepMC.replace(outFileNameHepMC.find(fileExtension2),fileExtension2.length(),".hepmc");
+//     }
+    
+//     // Add suffix
+
+//     outFileNameHepMC = outFileNameHepMC.replace(outFileNameHepMC.find(".hepmc"),std::string(".hepmc").length(),suffix+".hepmc");
+
+
+
+
+    lhef3.openLHEF(outFileNameLHE);
 
     // Initialize Pythia and set initial conditions
     pythia.readString("Main:numberOfEvents = " + totalEvents);
+    int nEvent   = pythia.mode("Main:numberOfEvents");
+    int nAbort   = pythia.mode("Main:timesAllowErrors");
     pythia.init();
-
+    
     // LHEF output
-    LHEF3FromPythia8 lhef3(pythia.event, pythia.info);
-    lhef3.openLHEF(outFileNameLHE);
+    
+    // Store initialization info in the LHAup object.
     lhef3.setInit();
 
+    // Write out this initialization info on the file.
+    lhef3.initLHEF();
+
     // HepMC output
-    HepMC3::Pythia8ToHepMC toHepMC;
+    HepMC3::Pythia8ToHepMC3 toHepMC;
     HepMC3::WriterAscii hepMCWriter(outFileNameHepMC);
 
+    
+
+    int iAbort = 0;
     // Event loop
-    for (int iEvent = 0; iEvent < std::stoi(totalEvents); ++iEvent) {
-        if (!pythia.next()) continue;
+    for (int iEvent = 0; iEvent < nEvent; ++iEvent) {
+        if (!pythia.next()) {
+        event.list();
+        if (++iAbort < nAbort) continue;
+        cout << " Event generation aborted prematurely, owing to error!\n";
+        break;
+        }
 
         // Write event to LHEF
         lhef3.setEvent();
-
-        // Write event to HepMC
+        // lhef3.eventLHEF();
+        // // Write event to HepMC
         HepMC3::GenEvent hepmcEvent;
         toHepMC.fill_next_event(pythia, hepmcEvent);
         hepMCWriter.write_event(hepmcEvent);
@@ -107,6 +172,7 @@ int main(int argc, char *argv[]) {
 
     // Finalize and close files
     pythia.stat();
+    // lhef3.updateSigma();
     lhef3.closeLHEF(true); // Update init block with final cross-section
     // HepMC file is closed automatically by its destructor
 
