@@ -87,6 +87,10 @@
             "parameters": ["WeakBosonAndParton:qqbar2gmZg = on", "WeakBosonAndParton:qg2gmZq = on"],
             "particles": [23],
         }
+        "W" : {
+            "parameters": ["WeakSingleBoson:ffbar2W = on"],
+            "particles": [24],
+        }
     },
 
     "channels":
@@ -196,6 +200,10 @@
     # {"id": 23, "decay": "Z_HNL_nu_tau",  "coupling": 2, "idlepton": -16},
     {"id": 23, "decay": "Z_HNL_lepton_e",    "coupling": 0, "idlepton": -11},
     {"id": 23, "decay": "Z_HNL_lepton_mu",   "coupling": 1, "idlepton": -13},
-    {"id": 23, "decay": "Z_HNL_lepton_tau",  "coupling": 2, "idlepton": -15}
+    {"id": 23, "decay": "Z_HNL_lepton_tau",  "coupling": 2, "idlepton": -15},
+
+    {"id": 24, "decay": "W_HNL_lepton_e",  "coupling": 1, "idlepton": -11},
+    {"id": 24, "decay": "W_HNL_lepton_mu",  "coupling": 1, "idlepton": -13},
+    {"id": 24, "decay": "W_HNL_lepton_tau",  "coupling": 1, "idlepton": -15}
     ]
 }

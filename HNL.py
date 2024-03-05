@@ -1,8 +1,22 @@
+import os
+import sys
+
+# Chemin vers l'installation de ROOT
+root_install_path = 'root_install'
+
+# Configuration des variables d'environnement pour ROOT
+os.environ['ROOTSYS'] = root_install_path
+os.environ['PATH'] = os.path.join(root_install_path, 'bin') + ':' + os.environ['PATH']
+os.environ['LD_LIBRARY_PATH'] = os.path.join(root_install_path, 'lib') + ':' + os.environ.get('LD_LIBRARY_PATH', '')
+
+# Ajout du chemin des bibliothèques ROOT à sys.path
+sys.path.append(os.path.join(root_install_path, 'lib'))
+
 import ROOT
 from const_utils import Particle, CKMmatrix, constants
 from particle import ParticleConfig
 import math
-import os
+
 import shipunit as u
 import yaml
 # Load some useful constants
@@ -160,6 +174,38 @@ class HNLConfig(ParticleConfig):
 
             # Add charm decays
             for ch in Z_channels:
+                self.add_channel(ch, histograms, mass, couplings, 1/max_total_br)
+                
+            self.fill_missing_channels(max_total_br, all_decays)
+            
+            
+        if process_selection == 'W':
+            selection = data['selections']['W']
+            print(selection)
+            
+            tau_id = 15 # tau- Monte-Carlo ID
+            self.add_particles([tau_id], data)
+            
+            for cmd in selection['parameters']:
+                self.config_lines.append(cmd+'\n')
+                
+            W_particles = selection['particles']
+
+            # --------------------------------------------------
+
+            # Find charm and tau decays to HNLs
+            W_channels = [ch for ch in all_channels if ch['id'] in W_particles]
+            
+            all_decays = [(ch['id'], [self.get_br(histograms, ch, mass, couplings)])
+                            for ch in Z_channels]
+            
+            max_total_br = self.compute_max_total_br(all_decays)
+            
+            self.exit_if_zero_br(max_total_br, process_selection, mass)
+            self.print_scale_factor(1/max_total_br)
+
+            # Add charm decays
+            for ch in W_channels:
                 self.add_channel(ch, histograms, mass, couplings, 1/max_total_br)
                 
             self.fill_missing_channels(max_total_br, all_decays)
