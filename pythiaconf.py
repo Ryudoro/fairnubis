@@ -53,7 +53,7 @@ if __name__ == '__main__':
     parser.add_argument("--type", type=str, default="HNL", help="particle")
     parser.add_argument("--mass", type=float, default=1., help="Mass of the HNL particle")
     parser.add_argument("--coupling", nargs=3, type=float, default=[0.447e-9, 7.15e-9, 1.88e-9], help="Three couplings for the HNL particle")
-    parser.add_argument("--process", default="c", help="Process selection for the simulation")
+    parser.add_argument("--process", default="W", help="Process selection for the simulation")
     parser.add_argument("--HNL_decay", default=False, help="True or False, are we interested in particule decays")
     parser.add_argument("--epsilon", default = 0.00000008, help="epsilon mixing value for DarkPhoton")
     parser.add_argument("--MesonMother",  help="Choose DP production meson source", required=False,  default=True)
