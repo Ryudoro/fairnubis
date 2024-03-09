@@ -6,3 +6,4 @@ pythia8
 root_src
 root_build
 root_install
+__pycache__
