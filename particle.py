@@ -1,15 +1,12 @@
 from abc import ABC, abstractmethod
-import ROOT
 import os
-import math
 import csv
 import re
 import numpy as np
 import scipy
 import six
-import yaml
-import shipunit as u 
 import sys
+import pandas as pd
 
 # Interface de Configuration de Particule
 class ParticleConfig(ABC):
@@ -247,3 +244,9 @@ class ParticleConfig(ABC):
                 branching_ratios[idx] = br
             histograms[decay_code] = (masses, branching_ratios)
         return histograms
+    
+    
+    def get_csv_br(self, filename, mother):
+        df = pd.read_csv(filename, index_col = "MX", sep = ",")
+        df = df.filter(like=mother)
+        return df

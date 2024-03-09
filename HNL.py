@@ -1,5 +1,6 @@
 import os
 import sys
+import pandas as pd
 
 # Chemin vers l'installation de ROOT
 root_install_path = 'root_install'
@@ -190,25 +191,35 @@ class HNLConfig(ParticleConfig):
                 self.config_lines.append(cmd+'\n')
                 
             W_particles = selection['particles']
-
+            
+            df_production = self.get_csv_br("W_dec_leps.csv", "24")
+   
+            
+            df_production = df_production.loc[mass]
+            df_production = pd.DataFrame(df_production)
+            
+            i = 0
+            for index,elem in df_production.iterrows():
+                self.config_lines.append(f"24:addChannel      1  {elem.iloc[0]}    0      9900015       {index.split()[-1]}\n")
+                i+=1
             # --------------------------------------------------
 
-            # Find charm and tau decays to HNLs
-            W_channels = [ch for ch in all_channels if ch['id'] in W_particles]
+            # # Find charm and tau decays to HNLs
+            # W_channels = [ch for ch in all_channels if ch['id'] in W_particles]
             
-            all_decays = [(ch['id'], [self.get_br(histograms, ch, mass, couplings)])
-                            for ch in Z_channels]
+            # all_decays = [(ch['id'], [self.get_br(histograms, ch, mass, couplings)])
+            #                 for ch in Z_channels]
             
-            max_total_br = self.compute_max_total_br(all_decays)
+            # max_total_br = self.compute_max_total_br(all_decays)
             
-            self.exit_if_zero_br(max_total_br, process_selection, mass)
-            self.print_scale_factor(1/max_total_br)
+            # self.exit_if_zero_br(max_total_br, process_selection, mass)
+            # self.print_scale_factor(1/max_total_br)
 
-            # Add charm decays
-            for ch in W_channels:
-                self.add_channel(ch, histograms, mass, couplings, 1/max_total_br)
+            # # Add charm decays
+            # for ch in W_channels:
+            #     self.add_channel(ch, histograms, mass, couplings, 1/max_total_br)
                 
-            self.fill_missing_channels(max_total_br, all_decays)
+            # self.fill_missing_channels(max_total_br, all_decays)
         # ... Autres configurations
         
         return self.config_lines

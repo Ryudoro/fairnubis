@@ -1,0 +1,8 @@
+*.lhe
+HepMC3-3.2.6
+hepmc3-build
+hepmc3-install
+pythia8
+root_src
+root_build
+root_install
