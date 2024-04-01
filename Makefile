@@ -1,11 +1,14 @@
 # Set the shell.
 SHELL=/usr/bin/env bash
 
+# Build directory.
+BUILD_DIR=build
+
 # Install directory prefixes.
-PREFIX_BIN=pythia8310/bin
-PREFIX_INCLUDE=pythia8310/include
-PREFIX_LIB=pythia8310/lib
-PREFIX_SHARE=pythia8310/share/Pythia8
+PREFIX_BIN=pythia8/bin
+PREFIX_INCLUDE=pythia8/include
+PREFIX_LIB=pythia8/lib
+PREFIX_SHARE=pythia8/share/Pythia8
 
 # HepMC3 install directory prefix.
 HEPMC3_INSTALL_DIR=hepmc3-install
@@ -20,16 +23,16 @@ LIB_SUFFIX=.so
 
 PYTHIA=$(PREFIX_LIB)/libpythia8$(LIB_SUFFIX)
 
-
 #-----------------------#
 #-- Making the runner --#
 #-----------------------#
 
-all: 
-	make run
+all: $(BUILD_DIR)/run
 
-run: $(PYTHIA) run_hep.cpp
-	${CXX} $@_hep.cpp -o $@ $(CXX_COMMON) 
+$(BUILD_DIR)/run: $(PYTHIA) run_hep.cpp
+	@mkdir -p $(BUILD_DIR)
+	${CXX} run_hep.cpp -o $@ $(CXX_COMMON) 
 
 clean: 
-	rm run
+	rm -rf $(BUILD_DIR)
+
