@@ -21,6 +21,7 @@ class Particle:
         """
         particle = self.PDGname(particle)
         tPart = self.pdg.GetParticle(particle)
+        print(particle)
         return tPart.Mass()
 
     def lifetime(self, particle):

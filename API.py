@@ -8,6 +8,8 @@ import os,sys
 import math
 import numpy as np
 from collections import Counter
+import subprocess
+
 print(os.getcwd())
 cfg = open("pythia8310/Makefile.inc")
 lib = "../lib"
@@ -72,7 +74,7 @@ def run_pythia_simulation(config_file, n_events):
 
         for i in range(pythia.event.size()):
             particle = pythia.event[i]
-            if particle.id() == 4900023:  # Supposons que 9900015 est l'ID de HNL
+            if particle.id() == 4900023 or particle.id() == 9900015:  # Supposons que 9900015 est l'ID de HNL
                 hnl_energies.append(particle.e())
                 hnl_etas.append(particle.eta())
                 hnl_phis.append(particle.phi())
@@ -129,7 +131,7 @@ def simulate():
         "epsilon": data.get("epsilon", 0.00000008),
         "mothermode": data.get("MesonMother", True)
     }
-
+    
     hnl_config = ParticleConfigFactory.get_particle_config(hnl_params['type'], hnl_params)
     simulation = PythiaSimulation(hnl_config)
     simulation.setup_simulation()
@@ -144,7 +146,48 @@ def run_simulation():
     config_file = data.get('config_file')
     n_events = data.get('n_events')
     result = run_pythia_simulation(config_file, n_events)
+
     return jsonify(result)
+
+
+
+@app.route('/run_simulation_hep_mc', methods=['POST'])
+def run_simulation_hep_mc():
+    simulation_params = request.get_json()
+
+    infile = simulation_params.get('infile', 'pythia_config.cmnd')
+    outfileLHE = simulation_params.get('outfileLHE', '')
+    outfileHepMC = simulation_params.get('outfileHepMC', 'output.hepmc')
+    suffix = simulation_params.get('suffix', '')
+    mode = simulation_params.get('mode', 'hnl')
+    nevents = simulation_params.get('nevent0s', '100')
+
+    command = [
+        './run_simulation',
+        '--infile', infile,
+        '--outfileLHE', outfileLHE,
+        '--outfileHepMC', outfileHepMC,
+        '--suffix', suffix,
+        '--mode', mode,
+        '--nevents', nevents
+    ]
+    print(nevents)
+    project_directory = ''
+    build_directory = os.path.join(project_directory, 'build')
+    
+    make_command = ['make']
+    make_result = subprocess.run(make_command, capture_output=True, text=True, cwd=build_directory)
+
+    if make_result.returncode != 0:
+        return {'message': 'Compilation failed', 'error': make_result.stderr}, 500
+    
+    result = subprocess.run(command, capture_output=True, text=True)
+
+    if result.returncode == 0:
+        return {'message': 'Simulation completed successfully', 'output': result.stdout}, 200
+    else:
+        return {'message': 'Simulation failed', 'error': result.stderr}, 500
+    
 
 @app.route('/get_plot/<plot_type>')
 def get_plot(plot_type):
