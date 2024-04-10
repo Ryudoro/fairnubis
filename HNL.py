@@ -29,7 +29,6 @@ class HNLConfig(ParticleConfig):
     def __init__(self, params):
         self.params = params
         self.config_lines =  []
-        self.pdg = ROOT.TDatabasePDG.Instance()
         self.particle = Particle()
         
     def generate_config(self):
@@ -45,7 +44,6 @@ class HNLConfig(ParticleConfig):
         
         
         histograms = self.make_interpolators('branchingratios.dat')
-        pdg = ROOT.TDatabasePDG.Instance()
         self.config_lines.append("Next:numberCount    =  0\n")
 
         # Inclusive
@@ -200,7 +198,7 @@ class HNLConfig(ParticleConfig):
             
             i = 0
             for index,elem in df_production.iterrows():
-                self.config_lines.append(f"24:addChannel      1  {elem.iloc[0]}    0      9900015       {index.split()[-1]}\n")
+                self.config_lines.append(f"24:addChannel      1  {elem.iloc[0]}    101      9900015       -{index.split()[-1]}\n")
                 i+=1
             # --------------------------------------------------
 
@@ -236,7 +234,10 @@ class HNLConfig(ParticleConfig):
         if may_decay:
             self.addHNLdecayChannels(hnl_instance, conffile=os.path.expandvars('DecaySelection.conf'), verbose=False)
         # Finish HNL setup...
-        self.config_lines.append("9900015:mayDecay = Off\n")
+        if may_decay:
+            self.config_lines.append(f"9900015:mayDecay = on\n")
+        else:
+            self.config_lines.append(f"9900015:mayDecay = off\n")
         
     def addHNLdecayChannels(self, hnl, conffile=os.path.expandvars('DecaySelection.conf'), verbose=True):
         """

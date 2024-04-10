@@ -32,7 +32,6 @@ class PythiaSimulation:
 
     def read_base_config(self, filepath):
         with open(filepath, 'r') as file:
-            #print(file.readlines()[0])
             return file.readlines()
 
     def setup_simulation(self):
