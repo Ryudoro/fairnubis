@@ -5,11 +5,11 @@ from PIL import Image
 from io import BytesIO
 
 
-col1, col2 = st.columns([6, 4])  # L'ajustement des proportions dépend de votre contenu et de la taille du logo
+col1, col2 = st.columns([6, 4])  # Adjust proportions based on your content and logo size
 
-# Utilisation de la deuxième colonne pour le logo
+# Use the second column for the logo
 with col2:
-    st.image("Untitled.jpeg", width=300)  # Ajustez le chemin et la taille selon vos besoins
+    st.image("Untitled.jpeg", width=300)
 with col1:
     st.image("pythia-logo-b.png", width = 100)
 st.title('Pythia Simulation Interface')
@@ -18,6 +18,12 @@ mode = st.sidebar.radio("Mode", ['Configure', 'Run', 'MadGraph'])
 
 # Function to display file content
 def display_file_content(filename):
+    """
+    Displays the content of a file in a text area within the app.
+    
+    Args:
+        filename (str): The path to the file to be displayed.
+    """
     try:
         with open(filename, "r") as file:
             content = file.read()
@@ -26,6 +32,12 @@ def display_file_content(filename):
         st.error(f"Error: The file {filename} could not be read.")
 
 def get_and_display_plot(plot_type):
+    """
+    Fetches and displays a plot image from a given URL based on plot type.
+    
+    Args:
+        plot_type (str): The type of plot to retrieve and display.
+    """
     response = requests.get(f'http://127.0.0.1:5000/get_plot/{plot_type}')
     if response.status_code == 200:
         img = Image.open(BytesIO(response.content))
@@ -36,10 +48,13 @@ def get_and_display_plot(plot_type):
 
 def check_hnl_decay_status(file_path):
     """
-    Recherche dans le fichier de configuration Pythia pour trouver le statut de désintégration du HNL.
+    Searches a Pythia configuration file to determine if HNL decay is enabled.
     
-    :param file_path: Chemin vers le fichier de configuration Pythia.
-    :return: True si HNL peut se désintégrer, False sinon.
+    Args:
+        file_path (str): Path to the Pythia configuration file.
+    
+    Returns:
+        bool: True if HNL decay is enabled, False otherwise.
     """
     try:
         with open(file_path, 'r') as file:
@@ -58,7 +73,7 @@ if mode == 'Configure':
     if 'type_' not in st.session_state:
         st.session_state['type_'] = 'HNL'
 
-    # Sélection du type de particule en dehors du formulaire pour mise à jour dynamique
+    # Particle type selection outside form to dynamically update other options
     type_ = st.selectbox("Type of particle", ['DarkPhoton', 'HNL'], key='type_selector', on_change=lambda: update_selection())
 
     def update_selection():
@@ -102,7 +117,6 @@ if mode == 'Configure':
                 "MesonMother": MesonMother == 'True'
             }
 
-            # Envoi de la requête à l'API
             response = requests.post('http://127.0.0.1:5000/simulate', json=data)
             
             if response.status_code == 200:
@@ -117,8 +131,8 @@ elif mode == "Run":
 
     simulation_started = False
     simulation_params = {
-            'config_file': 'pythia_config.cmnd',  # Ensure this path is correct
-            'n_events': 10000  # This parameter can be made configurable in Streamlit
+            'config_file': 'pythia_config.cmnd',
+            'n_events': 10000
         }
     
     simulation_params['n_events'] = st.number_input('Mass (GeV)', value=10000, step = 1, min_value=10, max_value=1000000)

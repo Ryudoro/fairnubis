@@ -21,17 +21,17 @@ import pythia8
 
 def plot_to_image(data, title, xlabel, ylabel, plot_type='histogram', labels=None, rotation=0, figsize=(10, 6)):
     """
-    Génère un plot (histogramme ou bar plot) et le sauvegarde dans un objet BytesIO.
+    Generates a plot (histogram or bar plot) and saves it to a BytesIO object.
 
     Parameters:
-    - data: Les données à plotter. Pour un histogramme, une liste de valeurs. Pour un bar plot, un tuple (positions, counts).
-    - title: Le titre du plot.
-    - xlabel: Le label de l'axe des x.
-    - ylabel: Le label de l'axe des y.
-    - plot_type: 'histogram' ou 'bar' pour le type de plot.
-    - labels: Les labels pour les barres dans un bar plot.
-    - rotation: Rotation des labels sur l'axe des x.
-    - figsize: Taille du plot.
+        data (list or tuple): Data to be plotted. For histograms, a list of values; for bar plots, a tuple (positions, counts).
+        title (str): The title of the plot.
+        xlabel (str): The x-axis label.
+        ylabel (str): The y-axis label.
+        plot_type (str): 'histogram' or 'bar' to specify the type of plot.
+        labels (list): Labels for the bars in a bar plot, if applicable.
+        rotation (int): Rotation angle for x-axis labels.
+        figsize (tuple): Size of the plot, e.g., (width, height).
     """
     plt.figure(figsize=figsize)
     
@@ -98,13 +98,11 @@ def run_pythia_simulation(config_file, n_events):
     })
     df_mothers.to_csv('simulation_mothers.csv', index=False)
 
-    # Pour les autres données
     df = pd.DataFrame({
         'Energy': hnl_energies,
         'Eta': hnl_etas,
         'Phi': hnl_phis,
         'DistanceR': hnl_distances_R
-        # Ajoutez d'autres colonnes ici
     })
     df.to_csv('simulation_results.csv', index=False)
 
@@ -116,6 +114,12 @@ app = Flask(__name__)
 
 @app.route('/simulate', methods=['POST'])
 def simulate():
+    """
+    Endpoint to initiate a simulation. Expects JSON data specifying the particle type and parameters.
+
+    Returns:
+        JSON: A confirmation message indicating whether the simulation was successful.
+    """
     data = request.json
 
     convert = {
@@ -142,6 +146,16 @@ def simulate():
 
 @app.route('/run_simulation', methods=['POST'])
 def run_simulation():
+    """
+    Configures and runs the PYTHIA simulation based on the provided config file and number of events.
+
+    Parameters:
+        config_file (str): Path to the PYTHIA configuration file.
+        n_events (int): Number of events to simulate.
+
+    Returns:
+        str: Confirmation message that the simulation has been completed and results saved.
+    """
     data = request.json
     config_file = data.get('config_file')
     n_events = data.get('n_events')
@@ -153,6 +167,12 @@ def run_simulation():
 
 @app.route('/run_simulation_hep_mc', methods=['POST'])
 def run_simulation_hep_mc():
+    """
+    Endpoint to run a HepMC-format simulation, compiling and executing simulation code.
+
+    Returns:
+        JSON: Simulation output or error messages.
+    """
     simulation_params = request.get_json()
 
     infile = simulation_params.get('infile', 'pythia_config.cmnd')
@@ -191,6 +211,12 @@ def run_simulation_hep_mc():
 
 @app.route('/get_plot/<plot_type>')
 def get_plot(plot_type):
+    """
+    Endpoint to retrieve a plot based on the specified type, reading data from previously generated CSV files.
+
+    Returns:
+        PNG Image: Generated plot image or error message for invalid types.
+    """
     if plot_type == "mothers":
         df_mothers = pd.read_csv('simulation_mothers.csv')
         positions = range(len(df_mothers))
