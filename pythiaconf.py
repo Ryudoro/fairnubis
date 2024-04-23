@@ -68,7 +68,8 @@ class PythiaSimulation:
     Attributes:
         particle_config: Configuration instance for the particle to be simulated.
     """
-    def __init__(self, particle_config):
+    def __init__(self, particle_config, path = "particle_config.cmnd"):
+        self.path = path
         self.particle_config = particle_config
         self.base_config = self.read_base_config("template.cmnd")
 
@@ -100,7 +101,7 @@ class PythiaSimulation:
         Args:
             config_lines (list): List of configuration lines to write.
         """
-        with open("pythia_config.cmnd", "w") as f:
+        with open(self.path, "w") as f:
             for line in config_lines:
                 f.write(line)
 
@@ -116,6 +117,7 @@ if __name__ == '__main__':
     parser.add_argument("--HNL_decay", default=False, help="True or False, are we interested in particule decays")
     parser.add_argument("--epsilon", default = 0.00000008, help="epsilon mixing value for DarkPhoton")
     parser.add_argument("--MesonMother",  help="Choose DP production meson source", required=False,  default=True)
+    parser.add_argument("--path", default="pythia_config.cmnd", help="Process selection for the simulation")
     
     args = parser.parse_args()
     
@@ -128,8 +130,8 @@ if __name__ == '__main__':
         "epsilon" : args.epsilon,
         "mothermode" : args.MesonMother
     }
-
+    path = args.path
     hnl_params['mothermode'] = "eta11"
     hnl_config = ParticleConfigFactory.get_particle_config(hnl_params["type"], hnl_params)
-    simulation = PythiaSimulation(hnl_config)
+    simulation = PythiaSimulation(hnl_config, path)
     simulation.setup_simulation()

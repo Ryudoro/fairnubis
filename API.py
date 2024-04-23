@@ -11,7 +11,7 @@ from collections import Counter
 import subprocess
 
 print(os.getcwd())
-cfg = open("pythia8310/Makefile.inc")
+cfg = open("pythia8/Makefile.inc")
 lib = "../lib"
 for line in cfg:
     if line.startswith("PREFIX_LIB="): lib = line[11:-1]; break
@@ -96,7 +96,10 @@ def run_pythia_simulation(config_file, n_events):
         'MotherID': mothers,
         'Counts': counts
     })
-    df_mothers.to_csv('simulation_mothers.csv', index=False)
+    
+    if not os.path.exists("Results"):
+        os.makedirs("Results")
+    df_mothers.to_csv(os.path.join("Results", f"result_{config_file[:-5]}_mother.csv"), index=False)
 
     df = pd.DataFrame({
         'Energy': hnl_energies,
@@ -104,7 +107,7 @@ def run_pythia_simulation(config_file, n_events):
         'Phi': hnl_phis,
         'DistanceR': hnl_distances_R
     })
-    df.to_csv('simulation_results.csv', index=False)
+    df.to_csv(os.path.join("Results", f"result_{config_file[:-5]}_hnl.csv"), index=False)
 
 
     return "Simulation completed and results saved."
@@ -135,9 +138,12 @@ def simulate():
         "epsilon": data.get("epsilon", 0.00000008),
         "mothermode": data.get("MesonMother", True)
     }
+    path = data.get("path", os.path.join("cmnd", "pythia_config.cmnd"))
     
+    if not os.path.exists("cmnd"):
+        os.makedirs("cmnd")
     hnl_config = ParticleConfigFactory.get_particle_config(hnl_params['type'], hnl_params)
-    simulation = PythiaSimulation(hnl_config)
+    simulation = PythiaSimulation(hnl_config, path)
     simulation.setup_simulation()
 
 
@@ -157,9 +163,11 @@ def run_simulation():
         str: Confirmation message that the simulation has been completed and results saved.
     """
     data = request.json
-    config_file = data.get('config_file')
+    config_files = data.get('config_file')
     n_events = data.get('n_events')
-    result = run_pythia_simulation(config_file, n_events)
+    
+    for config_file in config_files:
+        result = run_pythia_simulation(config_file, n_events)
 
     return jsonify(result)
 
@@ -175,38 +183,55 @@ def run_simulation_hep_mc():
     """
     simulation_params = request.get_json()
 
-    infile = simulation_params.get('infile', 'pythia_config.cmnd')
-    outfileLHE = simulation_params.get('outfileLHE', '')
-    outfileHepMC = simulation_params.get('outfileHepMC', 'output.hepmc')
+    if not os.path.exists("hepmc"):
+        os.makedirs("hepmc")
+    if not os.path.exists("lhe"):
+        os.makedirs("lhe")
+        
+    
+    infiles = simulation_params.get('config_file', [os.path.join("cmnd",'pythia_config.cmnd')])
+    
     suffix = simulation_params.get('suffix', '')
     mode = simulation_params.get('mode', 'hnl')
-    nevents = simulation_params.get('nevent0s', '100')
+    nevents = simulation_params.get('n_events', '100')
 
-    command = [
-        './run_simulation',
-        '--infile', infile,
-        '--outfileLHE', outfileLHE,
-        '--outfileHepMC', outfileHepMC,
-        '--suffix', suffix,
-        '--mode', mode,
-        '--nevents', nevents
-    ]
     print(nevents)
     project_directory = ''
     build_directory = os.path.join(project_directory, 'build')
     
     make_command = ['make']
-    make_result = subprocess.run(make_command, capture_output=True, text=True, cwd=build_directory)
+    make_result = subprocess.run(make_command, capture_output=True, text=True, cwd='.')
 
     if make_result.returncode != 0:
+        print(make_result)
         return {'message': 'Compilation failed', 'error': make_result.stderr}, 500
     
-    result = subprocess.run(command, capture_output=True, text=True)
+    
+    for infile in infiles:
+        cmnd_file = str(os.path.join("cmnd", infile))
+        # outfileLHE = simulation_params.get('outfileLHE', '')
+        # outfileHepMC = simulation_params.get('outfileHepMC', 'output.hepmc')
+        outfile_LHE = str(os.path.join("lhe", f"lhe_result_{infile[:-5]}.lhe"))
+        outfile_HepMC = str(os.path.join("hepmc", f"hepmc_result_{infile[:-5]}.hepmc"))
+        print(cmnd_file, outfile_LHE)
+        command = [
+            './build/run',
+            '--infile', cmnd_file,
+            '--outfileLHE', outfile_LHE,
+            '--outfileHepMC', outfile_HepMC,
+            '--suffix', suffix,
+            '--mode', mode,
+            '--nevents', str(nevents)
+        ]
+        
+        result = subprocess.run(command, capture_output=True, text=True)
 
-    if result.returncode == 0:
-        return {'message': 'Simulation completed successfully', 'output': result.stdout}, 200
-    else:
-        return {'message': 'Simulation failed', 'error': result.stderr}, 500
+        if result.returncode == 0:
+            continue
+        else:
+            print(result)
+            return {'message': 'Simulation failed', 'error': result.stderr}, 500
+    return {'message': 'Simulation completed successfully', 'output': result.stdout}, 200
     
 
 @app.route('/get_plot/<plot_type>')

@@ -78,65 +78,131 @@ if mode == 'Configure':
 
     def update_selection():
         st.session_state['type_'] = st.session_state['type_selector']
-        
-    with st.form(key='simulation_form'):
-        if st.session_state['type_'] == 'DarkPhoton':
-                process_selection = st.selectbox('Process Selection for DarkPhoton', ['qcd', 'meson'], key='process_selection_dark')
-        else:
-            process_selection = st.selectbox('Process Selection for HNL', ['c', 'b', 'W'], key='process_selection_hnl')
     
-        if process_selection == "c":
-            mass = st.number_input('Mass (GeV)', value=1.0, format="%.2f", max_value=2.)
-        elif process_selection == "b":
-            mass = st.number_input('Mass (GeV)', value=1.0, format="%.2f", max_value=7.)
-        elif process_selection == "meson":
-            mass = st.number_input('Mass (GeV)', value=1.0, format="%.2f", max_value=7.)
-        elif process_selection == "qcd":
-            mass = st.number_input('Mass (GeV)', value=100.0, format="%.2f", min_value=10.)
-        elif process_selection == "W":
-            mass = st.number_input('Mass (GeV)', value=1.0, format="%.2f", max_value=50.)
-        couplings = st.text_input('Couplings (comma-separated)', value='0.447e-9, 7.15e-9, 1.88e-9')
-        
-        HNL_decay = st.checkbox('Enable HNL Decay')
-        if type_ == "DarkPhoton":
-            epsilon = st.number_input('Epsilon Mixing Value for Dark Photon', value=0.00000008, format="%.8f")
-            MesonMother = st.radio("Choose DP production meson source", ('True', 'False'), index=0)
-        else:
-            epsilon = None
-            MesonMother = None
-        submit_button = st.form_submit_button('Save Configuration')
-
-        if submit_button:
-            data = {
-                "type" : st.session_state['type_'],
-                "mass": mass,
-                "coupling": [float(x.strip()) for x in couplings.split(',')],
-                "process": process_selection,
-                "HNL_decay": HNL_decay,
-                "epsilon": epsilon,
-                "MesonMother": MesonMother == 'True'
-            }
-
-            response = requests.post('http://127.0.0.1:5000/simulate', json=data)
-            
-            if response.status_code == 200:
-                st.success("Simulation configured successfully!")
+    ranges = st.radio("Range of masses or single input", ('True', 'False'), index=0)
+    if not ranges == 'True':
+        with st.form(key='simulation_form'):
+            if st.session_state['type_'] == 'DarkPhoton':
+                process_selection = st.selectbox('Process Selection for DarkPhoton', ['qcd', 'meson'], key='process_selection_dark')
             else:
-                st.error(f"Failed to configure simulation. Error: {response.text}")
+                process_selection = st.selectbox('Process Selection for HNL', ['c', 'b', 'W'], key='process_selection_hnl')
+        
+            if process_selection == "c":
+                mass = st.number_input('Mass (GeV)', value=1.0, format="%.2f", max_value=2.)
+            elif process_selection == "b":
+                mass = st.number_input('Mass (GeV)', value=1.0, format="%.2f", max_value=7.)
+            elif process_selection == "meson":
+                mass = st.number_input('Mass (GeV)', value=1.0, format="%.2f", max_value=7.)
+            elif process_selection == "qcd":
+                mass = st.number_input('Mass (GeV)', value=100.0, format="%.2f", min_value=10.)
+            elif process_selection == "W":
+                mass = st.number_input('Mass (GeV)', value=1.0, format="%.2f", max_value=50.)
+            couplings = st.text_input('Couplings (comma-separated)', value='0.447e-9, 7.15e-9, 1.88e-9')
+            path = st.text_input("Path to cmnd",value = "pythia_config.cmnd" )
+            HNL_decay = st.checkbox('Enable HNL Decay')
+            if type_ == "DarkPhoton":
+                epsilon = st.number_input('Epsilon Mixing Value for Dark Photon', value=0.00000008, format="%.8f")
+                MesonMother = st.radio("Choose DP production meson source", ('True', 'False'), index=0)
+            else:
+                epsilon = None
+                MesonMother = None
+            submit_button = st.form_submit_button('Save Configuration')
 
+            if submit_button:
+                data = {
+                    "type" : st.session_state['type_'],
+                    "mass": mass,
+                    "coupling": [float(x.strip()) for x in couplings.split(',')],
+                    "process": process_selection,
+                    "HNL_decay": HNL_decay,
+                    "epsilon": epsilon,
+                    "MesonMother": MesonMother == 'True',
+                    "path" : os.path.join("cmnd", path)
+                }
+
+                response = requests.post('http://127.0.0.1:5000/simulate', json=data)
+                
+                if response.status_code == 200:
+                    st.success("Simulation configured successfully!")
+                else:
+                    st.error(f"Failed to configure simulation. Error: {response.text}")
+    else:
+        with st.form(key='simulation_form'):
+            if st.session_state['type_'] == 'DarkPhoton':
+                process_selection = st.selectbox('Process Selection for DarkPhoton', ['qcd', 'meson'], key='process_selection_dark')
+            else:
+                process_selection = st.selectbox('Process Selection for HNL', ['c', 'b', 'W'], key='process_selection_hnl')
+        
+            if process_selection == "c":
+                min_mass = st.number_input('Min Mass (GeV)', value=1.0, format="%.2f", max_value=2.)
+                max_mass = st.number_input('Max Mass (GeV)', value=1.0, format="%.2f", max_value=2.)
+                step_mass = st.number_input('Step Mass (GeV)', value=1.0, format="%.2f", max_value=2.)
+            elif process_selection == "b":
+                min_mass = st.number_input('Min Mass (GeV)', value=1.0, format="%.2f", max_value=7.)
+                max_mass = st.number_input('Max Mass (GeV)', value=1.0, format="%.2f", max_value=7.)
+                step_mass = st.number_input('Step Mass (GeV)', value=1.0, format="%.2f", max_value=7.)
+            elif process_selection == "meson":
+                min_mass = st.number_input('Min Mass (GeV)', value=1.0, format="%.2f", max_value=7.)
+                max_mass = st.number_input('Max Mass (GeV)', value=1.0, format="%.2f", max_value=7.)
+                step_mass = st.number_input('Step Mass (GeV)', value=1.0, format="%.2f", max_value=7.)
+            elif process_selection == "qcd":
+                min_mass = st.number_input('Min Mass (GeV)', value=100.0, format="%.2f", min_value=10.)
+                max_mass = st.number_input('Max Mass (GeV)', value=100.0, format="%.2f", min_value=10.)
+                step_mass = st.number_input('Step Mass (GeV)', value=100.0, format="%.2f", min_value=10.)
+            elif process_selection == "W":
+                min_mass = st.number_input('Min Mass (GeV)', value=1.0, format="%.2f", max_value=50.)
+                max_mass = st.number_input('Max Mass (GeV)', value=1.0, format="%.2f", max_value=50.)
+                step_mass = st.number_input('Step Mass (GeV)', value=1.0, format="%.2f", max_value=50.)
+            couplings = st.text_input('Couplings (comma-separated)', value='0.447e-9, 7.15e-9, 1.88e-9')
+            path = st.text_input("Path to cmnd",value = "pythia_config.cmnd" )
+            HNL_decay = st.checkbox('Enable HNL Decay')
+            if type_ == "DarkPhoton":
+                epsilon = st.number_input('Epsilon Mixing Value for Dark Photon', value=0.00000008, format="%.8f")
+                MesonMother = st.radio("Choose DP production meson source", ('True', 'False'), index=0)
+            else:
+                epsilon = None
+                MesonMother = None
+            submit_button = st.form_submit_button('Save Configuration')
+            
+            values_list = list(range(int(min_mass*1000), int(max_mass*1000 + 1), int(step_mass*1000)))
+            if submit_button:
+                for elem in values_list:
+                    data = {
+                        "type" : st.session_state['type_'],
+                        "mass": elem/1000.,
+                        "coupling": [float(x.strip()) for x in couplings.split(',')],
+                        "process": process_selection,
+                        "HNL_decay": HNL_decay,
+                        "epsilon": epsilon,
+                        "MesonMother": MesonMother == 'True',
+                        "path" : os.path.join("cmnd", f"pythia_config_{elem}.cmnd")
+                    }
+
+                    response = requests.post('http://127.0.0.1:5000/simulate', json=data)
+                    
+                if response.status_code == 200:
+                    st.success("Simulation configured successfully!")
+                else:
+                    st.error(f"Failed to configure simulation. Error: {response.text}")
 # Run mode
 # Mode Run
 elif mode == "Run":
     st.subheader('Run Pythia Simulation')
 
     simulation_started = False
+    folder = "cmnd"
+    files = os.listdir(folder)
+    files_selected = st.multiselect("Choose the files you want to use for simulation", files)
+    
     simulation_params = {
-            'config_file': 'pythia_config.cmnd',
+            'config_file': files_selected,
             'n_events': 10000
         }
     
     simulation_params['n_events'] = st.number_input('Mass (GeV)', value=10000, step = 1, min_value=10, max_value=1000000)
 
+    # simulation_params["paths"] = files_selected
+    
     # Button to start the simulation
     if st.button('Start Simulation for plotting'):
         st.write('Running the simulation...')
@@ -166,9 +232,11 @@ elif mode == "Run":
             st.error('An error occurred during the simulation.')
             
     # Check if the simulation results file exists
-    if os.path.exists('simulation_results.csv') or simulation_started:
+    liste_res = os.listdir("Results")
+    if (liste_res is not None) or simulation_started:
         st.write("Simulation results are available.")
 
+        
         plot_type_options = {
             "Select": None,
             "Show HNL Energy": "energy",
@@ -192,10 +260,12 @@ elif mode == 'MadGraph':
 
 # Sidebar for additional options
 st.sidebar.subheader('Additional Options')
-option = st.sidebar.selectbox("Choose an option:", ["", "Display .cmnd File"])
+liste_cmnd = list(os.listdir("cmnd"))
 
-if option == "Display .cmnd File":
-    cmnd_file = "pythia_config.cmnd"
+option = st.sidebar.selectbox("Choose an option:", liste_cmnd)
+
+if option != "" and option != None:
+    cmnd_file = os.path.join("cmnd",str(option))
     if os.path.exists(cmnd_file):
         display_file_content(cmnd_file)
     else:
