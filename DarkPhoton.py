@@ -35,16 +35,6 @@ class DarkPhotonConfig(ParticleConfig):
         
         
         if process_selection=="meson":
-        # # let strange particle decay in Geant4
-        #     # p8 = P8gen.getPythiaInstance()
-        #     n=1
-        #     while n!=0:
-        #     n = p8.particleData.nextId(n)
-        #     p = p8.particleData.particleDataEntryPtr(n)
-        #     if p.tau0()>1: 
-        #         command = str(n)+":mayDecay = false"
-        #         p8.readString(command)
-        #         print("Pythia8 configuration: Made %s stable for Pythia, should decay in Geant4"%(p.name()))
             
         #     # Configuring production
             self.config_lines.append("SoftQCD:nonDiffractive = on\n")
@@ -58,18 +48,6 @@ class DarkPhotonConfig(ParticleConfig):
                 print("WARNING! Mass is too small, minimum is set to %3.3f GeV."%MinDPMass)
                 return 0
 
-        # produce a Z' from hidden valleys model
-            # p8 = P8gen.getPythiaInstance()
-            # n=1
-            # while n!=0:
-            # n = p8.particleData.nextId(n)
-            # p = p8.particleData.particleDataEntryPtr(n)
-            # if p.tau0()>1: 
-            #     command = str(n)+":mayDecay = false"
-            #     p8.readString(command)
-            #     print("Pythia8 configuration: Made %s stable for Pythia, should decay in Geant4"%(p.name()))
-            
-            # Configuring production
             self.config_lines.append("HiddenValley:ffbar2Zv = on\n")
             self.config_lines.append("HiddenValley:Ngauge = 1\n")
 
@@ -103,22 +81,15 @@ class DarkPhotonConfig(ParticleConfig):
         if process_selection=="qcd":
             dpid = self.DPid
             self.config_lines.append("{}:m0 = {:.12}\n".format(dpid, mass))
-            #P8gen.SetParameters(str(P8gen.GetDPId())+":mWidth = "+str(u.mm/ctau))
             self.config_lines.append("{}:mWidth = {:.12}\n".format(dpid, u.hbarc/ctau))
             self.config_lines.append("{}:mMin = 0.001\n".format(dpid))
             self.config_lines.append("{}:tau0 = {:.12}\n".format(dpid, ctau/u.mm))
-            #P8gen.SetParameters("ParticleData:modeBreitWigner = 0")   
-            #P8gen.SetParameters(str(P8gen.GetDPId())+":isResonance = false")
-            #P8gen.SetParameters(str(P8gen.GetDPId())+":all = A A 3 0 0 "+str(mass)+" 0.0 0.0 0.0 "+str(ctau/u.mm)+"  0   1   0   1   0") 
+
             self.config_lines.append("{}:onMode = off\n".format(dpid))
         else:
             self.config_lines.append("{}:new = A A 3 0 0 {:.12} 0.0 0.0 0.0 {:.12}  0   1   0   1   0\n"\
                                 .format(self.DPid, mass, ctau/u.mm))
-            #if (inclusive=="pbrem"): 
-            ### Do not set as resonance: decays to hadron doesn't work properly below 0.7 GeV.
-            #   P8gen.SetParameters(str(P8gen.GetDPId())+":isResonance = true")
-            #   P8gen.SetParameters(str(P8gen.GetDPId())+":mWidth = "+str(u.hbarc/ctau))
-            #   P8gen.SetParameters(str(P8gen.GetDPId())+":mMin = 0.001")
+
         
         self.config_lines.append("Next:numberCount    =  0\n")
 
@@ -130,7 +101,6 @@ class DarkPhotonConfig(ParticleConfig):
         # also add to PDG
         gamma = u.hbarc / float(ctau) #197.3269631e-16 / float(ctau) # hbar*c = 197 MeV*fm = 197e-16 GeV*cm
         print('gamma=%e'%gamma)
-        # addDPtoROOT(pid=P8gen.GetDPId(),m=mass,g=gamma)
         
         if process_selection=="meson":
             #change meson decay to dark photon depending on mass
@@ -167,16 +137,13 @@ class DarkPhotonConfig(ParticleConfig):
             selectedMum = 331
             self.config_lines.append("331:oneChannel = 1 1 0 22 9900015\n")
             #should be considered also for mass < 0.188 GeV....
-            #P8gen.SetParameters("331:oneChannel = 1 1 0 223 9900015")29%BR
-            #P8gen.SetParameters("331:oneChannel = 1 1 0 113 9900015")2.75%BR
             
         elif motherMode=='eta11' and eta1mass-mass>=0.00001:
             # use eta' -> gamma A'
             selectedMum = 331
             self.config_lines.append("331:oneChannel = 1 1 0 113 9900015\n")
             #should be considered also for mass < 0.188 GeV....
-            #P8gen.SetParameters("331:oneChannel = 1 1 0 223 9900015")29%BR
-            #P8gen.SetParameters("331:oneChannel = 1 1 0 113 9900015")2.75%BR
+
             
         else:
             #print "ERROR: please enter a nicer mass, for meson production it needs to be between %3.3f and %3.3f."%(pi0Start,eta1Stop)
@@ -246,8 +213,6 @@ alphaQED = 1./137.
 ccm = 2.99792458e+10
 hGeV = 6.58211928*pow(10.,-16)* pow(10.,-9) # no units or it messes up!!
 
-#utilities
-# sigma(e+e- -> hadrons) / sigma(e+e- -> mu+mu-)
 
 class DarkPhoton:
     "dark photon setup"
@@ -536,16 +501,6 @@ def prodRate(mDarkPhoton, epsilon, tmin = -0.5 * math.pi, tmax = 0.5 * math.pi):
                         args=(mDarkPhoton, epsilon) ) # extra parameters to pass to integrand
     return integral[0]
 
-# total production rate of A'
-#norm = prodRate(1.1,3.e-7) #mDarkPhoton,epsilon)
-# number of A' produced
-# numDarkPhotons = int(math.floor(norm*protonFlux))
-#
-# print
-# print "Epsilon \t %s"%epsilon
-# print "mDarkPhoton \t %s"%mDarkPhoton
-#print "A' production rate per p.o.t: \t %.8g"%norm
-# print "Number of A' produced in SHiP: \t %.8g"%numDarkPhotons
 
 
 def normalisedProductionPDF(p, theta, mDarkPhoton, epsilon, norm):
@@ -581,9 +536,7 @@ def hProdPDF(mDarkPhoton, epsilon, norm, binsp, binstheta, tmin = -0.5 * math.pi
             hPDFp.Fill(p,w)
     hPdfFilename = sys.modules['__main__'].outputDir+"/ParaPhoton_eps%s_m%s%s.root"%(epsilon,mDarkPhoton,suffix)
     outfile = ROOT.TFile(hPdfFilename,"recreate")
-    #weight = hPDF.Integral("width")
-    #print "Weight = %3.3f"%weight
-    #hPDF.Scale(1./weight)
+
     hPDF.Write()
     hPDFp.Write()
     hPDFtheta.Write()

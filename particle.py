@@ -14,7 +14,7 @@ class ParticleConfig(ABC):
     def generate_config(self):
         pass
     def compute_ctau(self):
-        return 0.1  # Exemple simplifié
+        return 0.1 
     
     def setup_pythia_inclusive(self):
         self.config_lines.append("SoftQCD:inelastic = on\n")
@@ -136,8 +136,7 @@ class ParticleConfig(ABC):
         All dummy channels can be identified by the presence of a photon among the
         decay products.
         """
-        # pdg = self.pdg
-        # charge = pdg.charge(particle)
+
         if particle > 0:
             self.config_lines.append('{}:addChannel      1   {:.16}    0       22      -11\n'.format(particle, remainder))
         elif particle < 0:

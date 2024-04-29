@@ -2,15 +2,15 @@ import os
 import sys
 import pandas as pd
 
-# Chemin vers l'installation de ROOT
+# installation folder
 root_install_path = 'root_install'
 
-# Configuration des variables d'environnement pour ROOT
+# ROOT environment variable setup
 os.environ['ROOTSYS'] = root_install_path
 os.environ['PATH'] = os.path.join(root_install_path, 'bin') + ':' + os.environ['PATH']
 os.environ['LD_LIBRARY_PATH'] = os.path.join(root_install_path, 'lib') + ':' + os.environ.get('LD_LIBRARY_PATH', '')
 
-# Ajout du chemin des bibliothèques ROOT à sys.path
+# adding ROOT to sys.path
 sys.path.append(os.path.join(root_install_path, 'lib'))
 
 import ROOT
@@ -33,7 +33,6 @@ class HNLConfig(ParticleConfig):
         
     def generate_config(self):
         mass, couplings, process_selection = self.params['mass'], self.params['couplings'], self.params['process_selection']
-        # self.config_lines.append("9900015:new = N2 N2 2 0 0 {:.12} 0.0 0.0 0.0 {:.12}  0   1   0   1   0\n".format(mass, self.compute_ctau()))
         may_decay = self.params['HNL_decay']
         datafile = 'hnl_production.yaml'
         with open(datafile, 'rU') as f:
@@ -116,8 +115,6 @@ class HNLConfig(ParticleConfig):
             # Add dummy channels in place of SM processes
             self.fill_missing_channels(max_total_br, all_decays)
 
-            # # List channels to confirm that Pythia has been properly set up
-            # P8gen.List(9900015)
         
         if process_selection in ['b', 'bc']:
             selection = data['selections'][process_selection]
@@ -200,25 +197,6 @@ class HNLConfig(ParticleConfig):
             for index,elem in df_production.iterrows():
                 self.config_lines.append(f"24:addChannel      1  {elem.iloc[0]}    101      9900015       -{index.split()[-1]}\n")
                 i+=1
-            # --------------------------------------------------
-
-            # # Find charm and tau decays to HNLs
-            # W_channels = [ch for ch in all_channels if ch['id'] in W_particles]
-            
-            # all_decays = [(ch['id'], [self.get_br(histograms, ch, mass, couplings)])
-            #                 for ch in Z_channels]
-            
-            # max_total_br = self.compute_max_total_br(all_decays)
-            
-            # self.exit_if_zero_br(max_total_br, process_selection, mass)
-            # self.print_scale_factor(1/max_total_br)
-
-            # # Add charm decays
-            # for ch in W_channels:
-            #     self.add_channel(ch, histograms, mass, couplings, 1/max_total_br)
-                
-            # self.fill_missing_channels(max_total_br, all_decays)
-        # ... Autres configurations
         
         return self.config_lines
 

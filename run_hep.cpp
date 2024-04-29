@@ -40,7 +40,7 @@ int main(int argc, char *argv[]) {
             i++;
         } else if (std::string(argv[i]) == "--nevents" || std::string(argv[i]) == "-n") {
             totalEvents = std::string(argv[i + 1]);
-            if (!std::regex_match(totalEvents, std::regex("((\\+|-)?[[:digit:]]+)(\\.(([[:digit:]]+)?)?"))) {
+            if (!std::regex_match(totalEvents, std::regex("((\\+|-)?[[:digit:]]+)(\\.([[:digit:]]+)?)?"))) {
                 std::cout << "Input --nevents/-n (" << totalEvents << ") is not a number, please enter an integer value." << std::endl;
                 return 1;
             }
