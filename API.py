@@ -11,7 +11,10 @@ from collections import Counter
 import subprocess
 
 print(os.getcwd())
-cfg = open("pythia8/Makefile.inc")
+try:
+    cfg = open("pythia8/Makefile.inc")
+except:
+    cfg = open("pythia8310/Makefile.inc")
 lib = "../lib"
 for line in cfg:
     if line.startswith("PREFIX_LIB="): lib = line[11:-1]; break
@@ -263,4 +266,8 @@ def get_plot(plot_type):
 
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(debug=True, port = 80)
+
+
+    "/home/supersymmetry/Documents/fairnubis"
+    "/home/supersymmetry/Documents/fairnubis/env/bin/gunicorn"

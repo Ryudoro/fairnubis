@@ -232,8 +232,15 @@ elif mode == "Run":
             st.error('An error occurred during the simulation.')
             
     # Check if the simulation results file exists
+    
+    if not os.path.exists("Results"):
+        os.makedirs("Results")
+        
     liste_res = os.listdir("Results")
-    if (liste_res is not None) or simulation_started:
+    
+    option_res = st.selectbox("Choose an option:", liste_res)
+    
+    if option_res is not None:
         st.write("Simulation results are available.")
 
         
@@ -260,6 +267,10 @@ elif mode == 'MadGraph':
 
 # Sidebar for additional options
 st.sidebar.subheader('Additional Options')
+
+if not os.path.exists("cmnd"):
+    os.makedirs("cmnd")
+    
 liste_cmnd = list(os.listdir("cmnd"))
 
 option = st.sidebar.selectbox("Choose an option:", liste_cmnd)
